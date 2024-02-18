@@ -164,6 +164,30 @@ class Parsestatementdatacsv:
                         data[row['\ufeffStatement']][row['Field Name']] = []
                     cash_info_and_values = dict(zip(info_array_cash, my_cash_data))
                     data[row['\ufeffStatement']][row['Field Name']].append(cash_info_and_values)
+                # Net Asset row info
+                if row['\ufeffStatement'] == 'Net Asset Value' and \
+                        row['Header'] == "Header":
+                    if None in row:
+                        info_array_net = row[None]
+                    else:
+                        info_array_net = []
+                    info_array_net.append(row['Field Value'])
+                    info_array_net.append(row['Field Name'])
+                # Net Asset value
+                if row['\ufeffStatement'] == 'Net Asset Value' and \
+                        row['Header'] == "Data":
+                    if None in row:
+                        my_net_data = row[None]
+                    else:
+                        my_net_data = []
+                    my_net_data.append(row['Field Value'])
+                    my_net_data.append(row['Field Name'])
+                    if row['\ufeffStatement'] not in data:
+                        data[row['\ufeffStatement']] = {}
+                    if row['Field Name'] not in data[row['\ufeffStatement']]:
+                        data[row['\ufeffStatement']][row['Field Name']] = []
+                    net_info_and_values = dict(zip(info_array_net, my_net_data))
+                    data[row['\ufeffStatement']][row['Field Name']].append(net_info_and_values)
                 # Open Positions row info
                 if row['\ufeffStatement'] == 'Open Positions' and \
                         row['Header'] == "Header":

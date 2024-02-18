@@ -26,9 +26,10 @@ def get_trade_report(local_data):
             keys_val = ' '.join(order_val[key] for key in keys_to_print if key in order_val)
             all_key_val.append(keys_val)
     sorted_all_key_val = sorted(all_key_val, key=lambda x: datetime.strptime(x.split()[-2], "%Y-%m-%d,"))
-    original_aray_witout_sort_date = [' '.join(string.split()[:-2]) for string in sorted_all_key_val]
-    print(' '.join(key for key in keys_to_print))
-    print(' \n'.join(key for key in original_aray_witout_sort_date))
+    original_aray_without_sort_date = ['\t'.join(string.split()[:-2]) for string in sorted_all_key_val]
+    keys_to_print.pop()
+    print('\t'.join(key.replace(' ', '') for key in keys_to_print))
+    print(' \n'.join(key for key in original_aray_without_sort_date))
     print('-' * terminal_width)
 
 
@@ -88,9 +89,10 @@ def get_dividend_and_dividend_tax_report(local_data):
             all_dividend_count += 1
 
     sorted_all_key_val = sorted(all_key_val, key=lambda x: datetime.strptime(x.split()[-1], "%Y-%m-%d"))
-    original_aray_witout_sort_date = [' '.join(string.split()[:-1]) for string in sorted_all_key_val]
-    print(' '.join(key for key in keys_to_print))
-    print(' \n'.join(key for key in original_aray_witout_sort_date))
+    original_aray_without_sort_date = ['\t'.join(string.split()[:-1]) for string in sorted_all_key_val]
+    keys_to_print.pop()
+    print('\t'.join(key for key in keys_to_print))
+    print(' \n'.join(key for key in original_aray_without_sort_date))
     print("All dividend received USD: " + str(all_dividend_received))
     print("All tax: " + str(all_pyed_tax))
     print("Dividend count: " + str(all_dividend_count))
@@ -140,6 +142,20 @@ def get_dividend_total_report(local_data):
 def get_cash_report(local_data):
     print('-' * terminal_width)
     data = copy.deepcopy(local_data)
+
+    net_info_array = []
+    for net_info in data['Net Asset Value']:
+        for net_info_el in data['Net Asset Value'][net_info]:
+            if 'Current Total' in net_info_el:
+                net_info_array.append({net_info_el['Asset Class']: net_info_el['Current Total']})
+            if 'Time Weighted Rate of Return' in net_info_el:
+                net_info_array.append({'Time Weighted Rate of Return': net_info_el['Time Weighted Rate of Return']})
+    print("Net Assets")
+    for net_cash_info in net_info_array:
+        for key, value in net_cash_info.items():
+            print(f"\t{key}: {value}")
+    print('-' * terminal_width)
+
     for cash_info, cash_info_array in data['Cash Report'].items():
         if cash_info == 'Starting Cash' or \
                 cash_info == 'Ending Settled Cash' or \
@@ -187,7 +203,7 @@ def run_get_info():
     parser.add_argument('-dxt', '--dividend-tax-total-report', action='store_true',
                         help='List all dividend tax total information.')
     parser.add_argument('-dx', '--dividend-and-dividend-tax-report', action='store_true',
-                        help='List all dividend and dividendtax information.')
+                        help='List all dividend and dividend tax information.')
     parser.add_argument('-o', '--open-positions-report', action='store_true',
                         help='List all open positions information.')
 
