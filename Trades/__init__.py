@@ -164,4 +164,28 @@ class Parsestatementdatacsv:
                         data[row['\ufeffStatement']][row['Field Name']] = []
                     cash_info_and_values = dict(zip(info_array_cash, my_cash_data))
                     data[row['\ufeffStatement']][row['Field Name']].append(cash_info_and_values)
+                # Open Positions row info
+                if row['\ufeffStatement'] == 'Open Positions' and \
+                        row['Header'] == "Header":
+                    if None in row:
+                        info_array_open = row[None]
+                    else:
+                        info_array_open = []
+                    info_array_open.append(row['Field Value'])
+                    info_array_open.append(row['Field Name'])
+                # Open Positions Report row info
+                if row['\ufeffStatement'] == 'Open Positions' and \
+                        row['Header'] == "Data":
+                    if None in row:
+                        my_open_data = row[None]
+                    else:
+                        my_open_data = []
+                    my_open_data.append(row['Field Value'])
+                    my_open_data.append(row['Field Name'])
+                    if row['\ufeffStatement'] not in data:
+                        data[row['\ufeffStatement']] = {}
+                    if row['Field Name'] not in data[row['\ufeffStatement']]:
+                        data[row['\ufeffStatement']][row['Field Name']] = []
+                    open_info_and_values = dict(zip(info_array_open, my_open_data))
+                    data[row['\ufeffStatement']][row['Field Name']].append(open_info_and_values)
         return data

@@ -161,6 +161,20 @@ def get_cash_report(local_data):
         print('-' * terminal_width)
 
 
+def get_open_positions_report(local_data):
+    print('-' * terminal_width)
+    data = copy.deepcopy(local_data)
+    all_key_val = []
+    keys_to_print = ['Symbol', 'Quantity', 'Cost Price', 'Value']
+
+    for open_val in data['Open Positions']['Summary']:
+        keys_val = '\t'.join(open_val[key] for key in keys_to_print if key in open_val)
+        all_key_val.append(keys_val)
+    print('\t'.join(key for key in keys_to_print))
+    print(' \n'.join(key for key in sorted(all_key_val)))
+    print('-' * terminal_width)
+
+
 def run_get_info():
     parser = argparse.ArgumentParser(description='Get trade info for statement.')
     parser.add_argument('file_name', help='Statement csv file with all possible information')
@@ -174,6 +188,9 @@ def run_get_info():
                         help='List all dividend tax total information.')
     parser.add_argument('-dx', '--dividend-and-dividend-tax-report', action='store_true',
                         help='List all dividend and dividendtax information.')
+    parser.add_argument('-o', '--open-positions-report', action='store_true',
+                        help='List all open positions information.')
+
     args = parser.parse_args()
     csv_reader = Parsestatementdatacsv(args.file_name)
     csv_data = csv_reader.read_csv
