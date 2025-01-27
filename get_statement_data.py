@@ -4,9 +4,10 @@ from datetime import datetime
 import argparse
 import shutil
 import copy
+from decimal import Decimal
 
 # from pprint import pprint
-from Trades import Parsestatementdatacsv
+from Trades.utils import Parsestatementdatacsv
 terminal_width = shutil.get_terminal_size().columns
 
 
@@ -22,7 +23,7 @@ def get_trade_report(local_data):
             original_date = datetime.strptime(order_val['Date/Time'], "%Y-%m-%d, %H:%M:%S")
             order_val['Date/Time_For_sort'] = order_val['Date/Time']
             order_val['Date/Time'] = original_date.strftime("%d.%m.%Y")
-            order_val['Price * Quantity'] = str(float(order_val['T. Price']) * float(order_val['Quantity']))
+            order_val['Price * Quantity'] = str(Decimal(order_val['T. Price']) * Decimal(order_val['Quantity'].replace(",", "")))
             keys_val = ' '.join(order_val[key] for key in keys_to_print if key in order_val)
             all_key_val.append(keys_val)
     sorted_all_key_val = sorted(all_key_val, key=lambda x: datetime.strptime(x.split()[-2], "%Y-%m-%d,"))
@@ -46,7 +47,7 @@ def get_dividend_tax_report(local_data):
             dividend_tax_val['Date'] = original_date.strftime("%d.%m.%Y")
             keys_val = ' '.join(dividend_tax_val[key] for key in keys_to_print if key in dividend_tax_val)
             all_key_val.append(keys_val)
-            all_pyed_tax = float(all_pyed_tax) + float(dividend_tax_val['Amount'])
+            all_pyed_tax += Decimal(dividend_tax_val['Amount'])
             all_tax_count += 1
     print(' '.join(key for key in keys_to_print))
     print(' \n'.join(key for key in all_key_val))
@@ -72,7 +73,7 @@ def get_dividend_and_dividend_tax_report(local_data):
                 for tax_tiker_data in data['Withholding Tax'][tiker]:
                     if dividend_and_tax_val['Date'] == tax_tiker_data['Date']:
                         dividend_and_tax_val['Tax_Amount'] = tax_tiker_data['Amount']
-                        all_pyed_tax = float(all_pyed_tax) + float(tax_tiker_data['Amount'])
+                        all_pyed_tax += Decimal(tax_tiker_data['Amount'])
                         tax_dividend_set = 1
                         all_tax_count += 1
                 if tax_dividend_set == 0:
@@ -85,7 +86,7 @@ def get_dividend_and_dividend_tax_report(local_data):
             dividend_and_tax_val['Date'] = original_date.strftime("%d.%m.%Y")
             keys_val = ' '.join(dividend_and_tax_val[key] for key in keys_to_print if key in dividend_and_tax_val)
             all_key_val.append(keys_val)
-            all_dividend_received = float(all_dividend_received) + float(dividend_and_tax_val['Amount'])
+            all_dividend_received += Decimal(dividend_and_tax_val['Amount'])
             all_dividend_count += 1
 
     sorted_all_key_val = sorted(all_key_val, key=lambda x: datetime.strptime(x.split()[-1], "%Y-%m-%d"))
@@ -122,7 +123,7 @@ def get_dividend_report(local_data):
             dividend_val['Date'] = original_date.strftime("%d.%m.%Y")
             keys_val = ' '.join(dividend_val[key] for key in keys_to_print if key in dividend_val)
             all_key_val.append(keys_val)
-            all_dividend_received = float(all_dividend_received) + float(dividend_val['Amount'])
+            all_dividend_received += Decimal(dividend_val['Amount'])
             all_dividend_count += 1
     print(' '.join(key for key in keys_to_print))
     print(' \n'.join(key for key in all_key_val))
