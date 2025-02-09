@@ -158,9 +158,7 @@ def get_cash_report(local_data):
     print('-' * terminal_width)
 
     for cash_info, cash_info_array in data['Cash Report'].items():
-        if cash_info == 'Starting Cash' or \
-                cash_info == 'Ending Settled Cash' or \
-                cash_info == 'Ending Cash':
+        if cash_info == 'Ending Settled Cash':
             continue
         values = {cash_info: []}
         for el in cash_info_array:
