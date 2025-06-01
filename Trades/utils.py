@@ -60,8 +60,10 @@ class Parsestatementdatacsv:
                         my_tax_data = []
                     my_tax_data.append(row['Field Value'])
                     my_tax_data[1] = str(abs(Decimal(my_tax_data[1])))
-                    pattern = r'(^[a-zA-Z0-9]+)(\([a-zA-Z0-9]+\)).* Cash Dividend (\w+) \d'
+                    #pattern = r'(^[a-zA-Z0-9]+)(\([a-zA-Z0-9]+\)).* Cash Dividend (\w+) \d'
+                    pattern = r'(^[a-zA-Z0-9]+)(\([a-zA-Z0-9]+\)).* (Cash Dividend|Payment in Lieu of Dividend).*'
                     is_in_currency = re.findall(pattern, my_tax_data[0])
+                    is_in_currency = [tupal + (row['Field Name'],) for tupal in is_in_currency]
                     my_tax_data.append(is_in_currency[0][2])
                     my_tax_data.append(is_in_currency[0][0] + is_in_currency[0][1])
                     my_tax_data.append(is_in_currency[0][0])
