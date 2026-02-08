@@ -5,7 +5,29 @@ This repository contains three Python scripts designed to make the process of fi
 **Please do your best**:  
 Before using the output from these scripts in your forms, **check every single line and calculation carefully**. Everything is created according to my understanding and personal view. If there are any rounding differences, they are intentionally made in a way that might lead to paying slightly more taxes, but it is to avoid any potential tax issues. Always verify the results to ensure accuracy for your specific situation.
 
+---
+
+#### How to Install Required Python Modules
+
+To install the necessary Python modules for these scripts, run:
+```bash
+pip install -r requirements.txt
+```
+Or install individual modules as needed, for example:
+```bash
+pip install requests pandas
+```
+
+For **Debian 13** users, you can also install the required modules using:
+```bash
+sudo apt install python3-numpy python3-pandas python3-requests python3-flask python3-matplotlib python3-scipy python3-pytest
+```
+
+---
+
 #### Scripts Overview
+
+
 
 ###### 1. **`bnb_currency_get.py`**
 - **Purpose**: Fetches the exchange rate for a specific currency for specific year from the BNB website. For example, you can retrieve the USD rate for 2024.
@@ -23,7 +45,7 @@ Before using the output from these scripts in your forms, **check every single l
 
 ---
 
-####  Future Plans
+#### Future Plans
 The future plan is to combine these scripts and provide easy copy-paste solutions for the forms.
 
 ---

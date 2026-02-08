@@ -1,0 +1,24 @@
+# IBKR Code            Yahoo Suffix    Exchange
+# -------------------  -------------   -------------------------------
+# IBIS / IBIS2 /BM     .DE             Xetra (Germany)
+# FWB / FWB2           .F              Frankfurt Stock Exchange (Germany)
+# SBF                  .PA             Euronext Paris (France)
+# AEB                  .AS             Euronext Amsterdam (Netherlands)
+# BVME                 .MI             Borsa Italiana — Milan (Italy)
+[ticker_ibkr_to_yahoo]
+".DE" = ["NOV", "AMD", "JNJ",  "PEP", "PRG", "7HP", "ABEA", "AP2", "APC", "CCC3", "FB2A", "XY7D", "MSF", "REP", "NOVd", "AMZ",  "XDWH",  "W1TA", "VOLT", "TL0", "INL"]
+".PA" = ["TTE"]
+".AS" = ["VUSA"]
+".F" = ["DNQ", "60P", "2ED", "PLUN", "IUI1", "FP3", "XNAS"]
+".MI" = ["VUAA", "INRG"]
+
+# New mapping: IBKR ticker -> underlying ticker
+[ticker_ibkr_to_uderlaying_ticker]
+"FB2Ad" = "FB2A"
+"MSFd"  = "MSF"
+"NOVd"  = "NOV"
+"REPe"  = "REP"
+"VOLT"  = "W1TA"
+"XYLE"  = "XY7D"
+"60P0"	= "60P"
+"AMZd"	= "AMZ"

@@ -1,9 +1,11 @@
-#!/usr/bin/python3.11
+#!/usr/bin/env python
 import csv
 import sys
 from datetime import datetime
 from decimal import Decimal
 from pprint import pprint
+
+import re
 
 from datetime import datetime
 
@@ -17,12 +19,20 @@ def convert_date_format(date_str):
     Returns:
     str: The formatted date string.
     """
+    # sanitize: remove surrounding quotes
+    new_date_string = date_str.strip().strip('"').strip("'")
+    # replace any non-ASCII (weird/mb characters like â¯) with space
+    new_date_string = ''.join(ch if ord(ch) < 128 else ' ' for ch in new_date_string)
+    # collapse multiple whitespace into single spaces
+    new_date_string = ' '.join(new_date_string.split())
+    # ensure there's a space before AM/PM if missing (e.g. ...19AM -> ...19 AM)
+    new_date_string = re.sub(r'(?i)(\d)(AM|PM)$', r'\1 \2', new_date_string)
     # Define the input and output formats
     input_format = "%b %d, %Y, %I:%M:%S %p"
     output_format = "%d.%m.%Y"
 
     # Parse the input string and format it
-    date_obj = datetime.strptime(date_str, input_format)
+    date_obj = datetime.strptime(new_date_string, input_format)
     return date_obj.strftime(output_format)
 
 
@@ -47,6 +57,14 @@ def process_trade(file_path, option):
         header_row = my_row_format.format(*my_headers)
         header_interest_row = my_interest_row_format.format(*my_interest_headers)
         for row in rows:
+            # Normalize rows with extra fields: ensure the first five
+            # fields are Date, Description, Value, Price per share, Quantity
+            # by taking price and quantity from the last two columns and
+            # moving any middle extra columns to the end. This keeps the
+            # rest of the script logic unchanged for 5-field rows.
+            if len(row) > 5:
+                row = [row[0], row[1], row[2], row[-2], row[-1]] + row[3:-2]
+
             description = row[1]
             if "BUY" in description or "Service Fee" or "Interest PAID" in description:
                 # Date, Description, Value, Price per share, Quantity of shares
