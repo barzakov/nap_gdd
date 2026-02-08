@@ -5,6 +5,15 @@ import argparse
 import shutil
 import copy
 from decimal import Decimal
+import re
+
+
+def _is_cash_dividend(desc: str) -> bool:
+    if not desc:
+        return False
+    # match "cash div" with common truncations/dots at end (case-insensitive)
+    return bool(re.search(r'cash\s+div\w{0,6}\.*\s*$', desc, re.IGNORECASE))
+
 
 # from pprint import pprint
 from Trades.utils import Parsestatementdatacsv
@@ -190,6 +199,125 @@ def get_open_positions_report(local_data):
     print('-' * terminal_width)
 
 
+def get_forex_report(local_data):
+    print('-' * terminal_width)
+    data = copy.deepcopy(local_data)
+    keys_to_print = ['Date/Time', 'Description', 'Quantity', 'Proceeds in EUR', 'Basis in EUR', 'Realized P/L in EUR']
+    all_key_val = []
+    for group_key in data.get('Forex', {}):
+        for forex_entry in data['Forex'][group_key]:
+            if 'Date/Time' in forex_entry:
+                try:
+                    original_date = datetime.strptime(forex_entry['Date/Time'], "%Y-%m-%d, %H:%M:%S")
+                    forex_entry['Date/Time'] = original_date.strftime("%d.%m.%Y")
+                except Exception:
+                    # keep original if parse fails
+                    pass
+            keys_val = ' '.join(forex_entry[key] for key in keys_to_print if key in forex_entry)
+            all_key_val.append(keys_val)
+    print(' '.join(key for key in keys_to_print))
+    if all_key_val:
+        print(' \n'.join(key for key in all_key_val))
+    else:
+        print("(no forex rows found)")
+    if 'Forex Total' in data:
+        print("Forex Total: " + str(data['Forex Total']))
+    print('-' * terminal_width)
+
+
+def get_forex_dividend_report(local_data):
+    print('-' * terminal_width)
+    data = copy.deepcopy(local_data)
+    rows = []
+    for group_key in data.get('Forex', {}):
+        for entry in data['Forex'][group_key]:
+            desc = entry.get('Description', '')
+            # only consider forex entries that are cash dividends (allow truncated endings)
+            if not _is_cash_dividend(desc):
+                continue
+            qty = str(entry.get('Quantity', '')).strip()
+            # only payouts (quantity not starting with '-')
+            if qty.startswith('-'):
+                continue
+            date_raw = entry.get('Date/Time', entry.get('Date', ''))
+            try:
+                dt = datetime.strptime(date_raw, "%Y-%m-%d, %H:%M:%S")
+            except Exception:
+                try:
+                    dt = datetime.strptime(date_raw, "%Y-%m-%d")
+                except Exception:
+                    dt = None
+            date_out = dt.strftime("%d.%m.%Y") if dt else date_raw
+            desc = entry.get('Description', '')
+            # extract leading token like MSF(US5949181045) if present
+            m = re.match(r'(^\S+\(\S+\))', desc)
+            display = m.group(1) if m else desc
+            in_eur = entry.get('Proceeds in EUR', '')
+            # store parsed datetime plus formatted output so we can sort by date
+            rows.append((dt, date_out, display, in_eur))
+
+    # sort by parsed datetime (None goes last)
+    rows_sorted = sorted(rows, key=lambda r: (0, r[0]) if r[0] else (1, ''))
+    print("Date\tISIN\tIN_EUR")
+    for r in rows_sorted:
+        print(f"{r[1]}\t{r[2]}\t{r[3]}")
+    print('-' * terminal_width)
+
+
+def get_forex_dividend_tax_report(local_data):
+    print('-' * terminal_width)
+    data = copy.deepcopy(local_data)
+    positives = []
+    negatives_by_desc = {}
+    for group_key in data.get('Forex', {}):
+        for entry in data['Forex'][group_key]:
+            desc = entry.get('Description', '')
+            # only consider forex entries that are cash dividends (allow truncated endings)
+            if not _is_cash_dividend(desc):
+                continue
+            qty = str(entry.get('Quantity', '')).strip()
+            date_raw = entry.get('Date/Time', entry.get('Date', ''))
+            try:
+                dt = datetime.strptime(date_raw, "%Y-%m-%d, %H:%M:%S").date()
+            except Exception:
+                try:
+                    dt = datetime.strptime(date_raw, "%Y-%m-%d").date()
+                except Exception:
+                    dt = None
+            desc = entry.get('Description', '')
+            m = re.match(r'(^\S+\(\S+\))', desc)
+            display = m.group(1) if m else desc
+            proceeds = entry.get('Proceeds in EUR', '')
+            if qty.startswith('-'):
+                negatives_by_desc.setdefault(display, []).append({'date': dt, 'proceeds': proceeds})
+            else:
+                positives.append({'date': dt, 'display': display, 'proceeds': proceeds})
+
+    # sort positives by date ascending (None goes last) then match negatives
+    positives_sorted = sorted(positives, key=lambda p: (0, p['date']) if p['date'] else (1, None))
+    # match positives with negatives: exact date first, then ±1 day
+    print("Date\tISIN\tIN_EUR\tTax_Amount_in_EUR")
+    for p in positives_sorted:
+        tax_value = ''
+        negs = negatives_by_desc.get(p['display'], [])
+        # exact date
+        for n in negs:
+            if n['date'] == p['date']:
+                tax_value = n['proceeds']
+                break
+        # fallback ±1 day
+        if not tax_value and p['date'] is not None:
+            for n in negs:
+                if n['date'] is None:
+                    continue
+                if abs((n['date'] - p['date']).days) <= 1:
+                    tax_value = n['proceeds']
+                    break
+        date_out = p['date'].strftime("%d.%m.%Y") if p['date'] else ''
+        print(f"{date_out}\t{p['display']}\t{p['proceeds']}\t{tax_value}")
+    print('-' * terminal_width)
+
+
 def run_get_info():
     parser = argparse.ArgumentParser(description='Get trade info for statement.')
     parser.add_argument('file_name', help='Statement csv file with all possible information')
@@ -205,6 +333,11 @@ def run_get_info():
                         help='List all dividend and dividend tax information.')
     parser.add_argument('-o', '--open-positions-report', action='store_true',
                         help='List all open positions information.')
+    parser.add_argument('-f', '--forex-report', action='store_true', help='List all forex information.')
+    parser.add_argument('-fd', '--forex-dividend-report', action='store_true',
+                        help='List forex dividend payouts (Date, ISIN, IN_EUR).')
+    parser.add_argument('-fdx', '--forex-dividend-tax-report', action='store_true',
+                        help='List forex dividend payouts with tax (Date, ISIN, IN_EUR, Tax_Amount_in_EUR).')
 
     args = parser.parse_args()
     csv_reader = Parsestatementdatacsv(args.file_name)

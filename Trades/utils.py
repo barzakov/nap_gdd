@@ -216,4 +216,39 @@ class Parsestatementdatacsv:
                         data[row['\ufeffStatement']][row['Field Name']] = []
                     open_info_and_values = dict(zip(info_array_open, my_open_data))
                     data[row['\ufeffStatement']][row['Field Name']].append(open_info_and_values)
+                # forex: Header / Data / Total (same style as other sections)
+                if row['\ufeffStatement'] == 'Forex P/L Details' and row['Header'] == 'Header':
+                    if None in row:
+                        info_array_forex = row[None]
+                    else:
+                        info_array_forex = []
+
+                if row['\ufeffStatement'] == 'Forex P/L Details' and row['Header'] == 'Data' and "Total" not in row['Field Name']:
+                    if None in row:
+                        my_forex_data = row[None]
+                    else:
+                        my_forex_data = []
+                    # keep the same approach: append Field Value as other sections do
+                    my_forex_data.append(row['Field Value'])
+                    # build dict from header -> values
+                    if info_array_forex:
+                        forex_info_and_values = dict(zip(info_array_forex, my_forex_data))
+                    else:
+                        # fallback: create keys col_0..col_n
+                        keys = [f"col_{i}" for i in range(len(my_forex_data))]
+                        forex_info_and_values = dict(zip(keys, my_forex_data))
+                    # choose grouping key similar to other sections
+                    group_key = forex_info_and_values.get('Description') or forex_info_and_values.get('Asset Category') or 'Unknown'
+                    if 'Forex' not in data:
+                        data['Forex'] = {}
+                    if group_key not in data['Forex']:
+                        data['Forex'][group_key] = []
+                    data['Forex'][group_key].append(forex_info_and_values)
+
+                if row['\ufeffStatement'] == 'Forex P/L Details' and row['Header'] == 'Data' and "Total" == row['Field Name']:
+                    my_all_forex_data = row[None] if None in row else []
+                    # keep totals as a list of non-empty values (mirrors safe handling used elsewhere)
+                    totals = [v.strip() for v in my_all_forex_data if v and v.strip() != ""]
+                    data['Forex Total'] = totals
+
         return data
