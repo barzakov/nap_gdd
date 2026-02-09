@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import csv
 import sys
 from datetime import datetime
@@ -81,8 +81,8 @@ def process_trade(file_path, option):
                     sys.exit(1)
                 main_isin = isin
                 if ( option == "buy" or option == "total" ) and "BUY" in description:
-                    price_per_share = row[3].replace('£', '')
-                    quantity = row[4]
+                    price_per_share = row[3].replace('£', '').replace(',', '')
+                    quantity = row[4].replace(',', '')
                     total_quantity = Decimal(total_quantity) + Decimal(quantity)
                     currency = description_split[1]
                     total_price = Decimal(price_per_share) * Decimal(quantity)
@@ -93,7 +93,7 @@ def process_trade(file_path, option):
                         my_data["buy"] = []
                     my_data["buy"].append(my_current_row)
                 elif ( option == "fee" or option == "total" ) and "Service Fee" in description:
-                    fee = row[2].replace('£', '')
+                    fee = row[2].replace('£', '').replace(',', '')
                     total_fees += abs(Decimal(fee))
                     currency = description_split[3]
                     main_currency = currency
@@ -104,7 +104,7 @@ def process_trade(file_path, option):
                         my_data["fee"] = []
                     my_data["fee"].append(my_current_row)
                 elif ( option == "interest" or option == "total" ) and "Interest PAID" in description:
-                    interest = row[2].replace('£', '')
+                    interest = row[2].replace('£', '').replace(',', '')
                     total_interest += abs(Decimal(interest))
                     currency = description_split[2]
                     main_currency = currency
