@@ -188,14 +188,76 @@ def get_cash_report(local_data):
 def get_open_positions_report(local_data):
     print('-' * terminal_width)
     data = copy.deepcopy(local_data)
+
     all_key_val = []
     keys_to_print = ['Symbol', 'Quantity', 'Cost Price', 'Value']
-
     for open_val in data['Open Positions']['Summary']:
         keys_val = '\t'.join(open_val[key] for key in keys_to_print if key in open_val)
         all_key_val.append(keys_val)
-    print('\t'.join(key for key in keys_to_print))
-    print(' \n'.join(key for key in sorted(all_key_val)))
+
+    open_positions_symbols = [item.split('\t')[0] for item in all_key_val]
+    list_set = set(open_positions_symbols)
+    dict_keys = set()
+    # Find last 4-digit year (robust for formats)
+    period = data['Statement']['Period']
+    end_year_match = re.search(r'(\d{4})(?!\d)', period)
+    end_year = int(end_year_match.group(1)) if end_year_match else None
+    if end_year <= 2024:
+        dict_keys = set(data['Instrument Information'].keys())
+    else:
+        tiker_symol_to_use = 'Underlying'
+        for key, value in data['Instrument Information'].items():
+            if isinstance(value, dict) and tiker_symol_to_use in value:
+    # DO not include Symols that Underlying tiker end with .OLD since ther and not used anymore
+                if str(value[tiker_symol_to_use]).endswith('.OLD'):
+                    continue  # Exclude this key
+            dict_keys.add(key)
+    # Symbols in list Open Positions but not dict Instrument Information
+    missing_in_dict = sorted(list_set - dict_keys)
+    # Keys in dict Instrument Information but not list Open Positions
+    extra_in_dict = sorted(dict_keys - list_set)
+    if missing_in_dict:
+        print("\n!!!!!!!\nERROR; Symbols NOT in dict Instrument Information:", missing_in_dict, "\n!!!!!!!\n")
+    if extra_in_dict:
+        print("\n!!!!!!!\nERROR: EXTRA keys in dict Instrument Information (missing from list Open Positions) probably \
+        Sell or Merged(Acquisition):", extra_in_dict, "\n!!!!!!!!\n")
+
+    # New columns and data collection
+    new_keys_to_print = ['Security ID', 'Quantity', 'Symbol', 'Underlying', 'Listing Exch', 'Type', 'Description', 'Cost Price', 'Value']
+    rows = []
+    for open_val in data['Open Positions']['Summary']:
+        symbol = open_val['Symbol']
+        if symbol in data['Instrument Information']:
+            info = data['Instrument Information'][symbol]
+            row = [
+                info.get('Security ID', ''),
+                open_val.get('Quantity', ''),
+                symbol,
+                info.get('Underlying', ''),
+                info.get('Listing Exch', ''),
+                info.get('Type', ''),
+                info.get('Description', ''),
+                open_val.get('Cost Price', ''),
+                open_val.get('Value', '')
+            ]
+            rows.append(row)
+
+    # Sort rows by Symbol (index 2)
+    rows.sort(key=lambda r: r[2])
+
+    # Calculate max widths for each column
+    widths = [max(len(str(row[i])) for row in rows) if rows else 0 for i in range(len(new_keys_to_print))]
+    header_widths = [max(widths[i], len(new_keys_to_print[i])) for i in range(len(new_keys_to_print))]
+
+    # Print header
+    header = '  '.join(f"{new_keys_to_print[i]:<{header_widths[i]}}" for i in range(len(new_keys_to_print)))
+    print(header)
+
+    # Print rows
+    for row in rows:
+        line = '  '.join(f"{str(row[i]):<{header_widths[i]}}" for i in range(len(row)))
+        print(line)
+
     print('-' * terminal_width)
 
 

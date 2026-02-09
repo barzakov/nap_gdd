@@ -251,4 +251,53 @@ class Parsestatementdatacsv:
                     totals = [v.strip() for v in my_all_forex_data if v and v.strip() != ""]
                     data['Forex Total'] = totals
 
-        return data
+                # Financial Instrument Information data
+                if row['\ufeffStatement'] == 'Financial Instrument Information' and row['Header'] == 'Header':
+                    if None in row:
+                        info_array_instrument = row[None]
+                        info_array_instrument.append(row['Field Value'])
+                        info_array_instrument.append(row['Field Name'])
+                    else:
+                        info_array_instrument = []
+                if row['\ufeffStatement'] == 'Financial Instrument Information' and row['Header'] == 'Data':
+                    # collect data values from the row starting from the third field
+                    fieldnames = list(row.keys())
+                    if None in row:
+                        my_instrument_data = row[None]
+                        my_instrument_data.append(row['Field Value'])
+                        my_instrument_data.append(row['Field Name'])
+                    else:
+                        my_instrument_data = []
+
+                    # build mapping header -> value
+                    instrument_info = dict(zip(info_array_instrument, my_instrument_data))
+                    # replace empty values with UNSET_<ColumnName>
+                    for hk in instrument_info:
+                        v = instrument_info.get(hk)
+                        if v is None or (isinstance(v, str) and v.strip() == ""):
+                            instrument_info[hk] = f"UNSET_{hk.replace(' ', '_')}"
+                        else:
+                            instrument_info[hk] = str(v).strip()
+                    period = data['Statement']['Period']
+                    end_year_match = re.search(r'(\d{4})(?!\d)', period)
+                    end_year = int(end_year_match.group(1)) if end_year_match else None
+                    if end_year <= 2024:
+                        instrument_information_tiker_to_use = 'Symbol'
+                    else:
+                        instrument_information_tiker_to_use = 'Underlying'
+                    # determine symbol key (first token before comma) or UNSET_Symbol
+                    raw_underlaying_symbol = instrument_info.get(instrument_information_tiker_to_use) or ""
+                    if raw_underlaying_symbol and not raw_underlaying_symbol.startswith('UNSET_'):
+                        underlaying_symbol_key = raw_underlaying_symbol
+                    else:
+                        underlaying_symbol_key = "UNSET_Symbol"
+                    # store the instrument_info under top-level Instrument Information keyed by underlaying_symbol_key
+                    if 'Instrument Information' not in data:
+                        data['Instrument Information'] = {}
+                    data['Instrument Information'][underlaying_symbol_key] = instrument_info
+
+                # Statement row Period info
+                if row['\ufeffStatement'] == 'Statement' and row['Field Name'] == "Period":
+                    data['Statement'] = {"Period":row['Field Value']}
+
+            return data
