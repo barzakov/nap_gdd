@@ -221,8 +221,43 @@ def get_open_positions_report(local_data):
     if extra_in_dict:
         print("\n!!!!!!!\nERROR: EXTRA keys in dict Instrument Information (missing from list Open Positions) probably \
         Sell or Merged(Acquisition):", extra_in_dict, "\n!!!!!!!!\n")
-    print('\t'.join(key for key in keys_to_print))
-    print(' \n'.join(key for key in sorted(all_key_val)))
+
+    # New columns and data collection
+    new_keys_to_print = ['Security ID', 'Quantity', 'Symbol', 'Underlying', 'Listing Exch', 'Type', 'Description', 'Cost Price', 'Value']
+    rows = []
+    for open_val in data['Open Positions']['Summary']:
+        symbol = open_val['Symbol']
+        if symbol in data['Instrument Information']:
+            info = data['Instrument Information'][symbol]
+            row = [
+                info.get('Security ID', ''),
+                open_val.get('Quantity', ''),
+                symbol,
+                info.get('Underlying', ''),
+                info.get('Listing Exch', ''),
+                info.get('Type', ''),
+                info.get('Description', ''),
+                open_val.get('Cost Price', ''),
+                open_val.get('Value', '')
+            ]
+            rows.append(row)
+
+    # Sort rows by Symbol (index 2)
+    rows.sort(key=lambda r: r[2])
+
+    # Calculate max widths for each column
+    widths = [max(len(str(row[i])) for row in rows) if rows else 0 for i in range(len(new_keys_to_print))]
+    header_widths = [max(widths[i], len(new_keys_to_print[i])) for i in range(len(new_keys_to_print))]
+
+    # Print header
+    header = '  '.join(f"{new_keys_to_print[i]:<{header_widths[i]}}" for i in range(len(new_keys_to_print)))
+    print(header)
+
+    # Print rows
+    for row in rows:
+        line = '  '.join(f"{str(row[i]):<{header_widths[i]}}" for i in range(len(row)))
+        print(line)
+
     print('-' * terminal_width)
 
 
