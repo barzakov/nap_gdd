@@ -380,6 +380,49 @@ def get_forex_dividend_tax_report(local_data):
     print('-' * terminal_width)
 
 
+def get_interest_report(local_data):
+    print('-' * terminal_width)
+    data = copy.deepcopy(local_data)
+    rows = data.get('Interest', [])
+
+    def parse_date(row):
+        try:
+            return datetime.strptime(row['Date'], "%Y-%m-%d")
+        except Exception:
+            return datetime.min
+
+    rows_sorted = sorted(rows, key=lambda r: (r['Currency'], parse_date(r)))
+
+    # Build display rows: strip redundant leading "EUR " / "USD " from description
+    display_rows = []
+    for row in rows_sorted:
+        try:
+            dt = datetime.strptime(row['Date'], "%Y-%m-%d")
+            date_out = dt.strftime("%d.%m.%Y")
+        except Exception:
+            date_out = row['Date']
+        currency = row['Currency']
+        desc = re.sub(r'^' + re.escape(currency) + r'\s+', '', row['Description'])
+        display_rows.append((row['Amount'], currency, desc, date_out))
+
+    # Column widths for console alignment (also tab-separated for Google Sheets paste)
+    col_headers = ['Interest', 'Currency', 'Description', 'Date/Time']
+    col_widths = [
+        max(len(col_headers[0]), max((len(r[0]) for r in display_rows), default=0)),
+        max(len(col_headers[1]), max((len(r[1]) for r in display_rows), default=0)),
+        max(len(col_headers[2]), max((len(r[2]) for r in display_rows), default=0)),
+        max(len(col_headers[3]), max((len(r[3]) for r in display_rows), default=0)),
+    ]
+
+    def fmt_row(cols):
+        return '\t'.join(str(c).ljust(col_widths[i]) for i, c in enumerate(cols))
+
+    print(fmt_row(col_headers))
+    for r in display_rows:
+        print(fmt_row(r))
+    print('-' * terminal_width)
+
+
 def run_get_info():
     parser = argparse.ArgumentParser(description='Get trade info for statement.')
     parser.add_argument('file_name', help='Statement csv file with all possible information')
@@ -400,6 +443,8 @@ def run_get_info():
                         help='List forex dividend payouts (Date, ISIN, IN_EUR).')
     parser.add_argument('-fdx', '--forex-dividend-tax-report', action='store_true',
                         help='List forex dividend payouts with tax (Date, ISIN, IN_EUR, Tax_Amount_in_EUR).')
+    parser.add_argument('-i', '--interest-report', action='store_true',
+                        help='List all interest payments (Interest, Currency, Description, Date/Time).')
 
     args = parser.parse_args()
     csv_reader = Parsestatementdatacsv(args.file_name)

@@ -296,6 +296,24 @@ class Parsestatementdatacsv:
                         data['Instrument Information'] = {}
                     data['Instrument Information'][underlaying_symbol_key] = instrument_info
 
+                # Interest data
+                if row['\ufeffStatement'] == 'Interest' and \
+                        row['Header'] == 'Data' and \
+                        row['Field Name'] not in ('Total', 'Total in EUR', 'Total Interest in EUR'):
+                    currency = row['Field Name']
+                    date = row['Field Value']
+                    extras = row[None] if None in row else []
+                    description = extras[0] if len(extras) > 0 else ''
+                    amount = extras[1] if len(extras) > 1 else ''
+                    if 'Interest' not in data:
+                        data['Interest'] = []
+                    data['Interest'].append({
+                        'Currency': currency,
+                        'Date': date,
+                        'Description': description,
+                        'Amount': amount,
+                    })
+
                 # Statement row Period info
                 if row['\ufeffStatement'] == 'Statement' and row['Field Name'] == "Period":
                     data['Statement'] = {"Period":row['Field Value']}
