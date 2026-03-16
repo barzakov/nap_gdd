@@ -36,6 +36,10 @@ def convert_date_format(date_str):
     return date_obj.strftime(output_format)
 
 
+def format_tsv_row(values):
+    return "\t".join(str(value) for value in values)
+
+
 def process_trade(file_path, option):
     with open(file_path, 'r', newline='', encoding='utf-8') as csvfile:
         csvreader = csv.reader(csvfile)
@@ -51,11 +55,9 @@ def process_trade(file_path, option):
 
                 #Interest	Currency	Symbol Date/Time
         my_interest_headers = ["#Interest", "Currency", "Symbol", "Date/Time"]
-        my_interest_row_format = "{:>10} {:>8} {:>15} {:>10}"
         my_headers = ["Comm/Fee", "Currency", "T.Price", "Symbol", "Quantity", "Date/Time", "Price*Quantity"]
-        my_row_format = "{:>10} {:>10} {:>8} {:>15} {:>10} {:>10} {:>10}"
-        header_row = my_row_format.format(*my_headers)
-        header_interest_row = my_interest_row_format.format(*my_interest_headers)
+        header_row = format_tsv_row(my_headers)
+        header_interest_row = format_tsv_row(my_interest_headers)
         for row in rows:
             # Normalize rows with extra fields: ensure the first five
             # fields are Date, Description, Value, Price per share, Quantity
@@ -87,7 +89,7 @@ def process_trade(file_path, option):
                     currency = description_split[1]
                     total_price = Decimal(price_per_share) * Decimal(quantity)
                     my_row = [ 0, currency, price_per_share, isin, quantity, date_time, total_price]
-                    my_current_row = my_row_format.format(*my_row)
+                    my_current_row = format_tsv_row(my_row)
                     #print(my_current_row)
                     if "buy" not in my_data:
                         my_data["buy"] = []
@@ -98,7 +100,7 @@ def process_trade(file_path, option):
                     currency = description_split[3]
                     main_currency = currency
                     my_row = [ fee, currency, 0, isin, 0, date_time, 0]
-                    my_current_row = my_row_format.format(*my_row)
+                    my_current_row = format_tsv_row(my_row)
                     #print(my_current_row)
                     if "fee" not in my_data:
                         my_data["fee"] = []
@@ -109,7 +111,7 @@ def process_trade(file_path, option):
                     currency = description_split[2]
                     main_currency = currency
                     my_row = [ interest, currency, isin, date_time]
-                    my_current_row = my_interest_row_format.format(*my_row)
+                    my_current_row = format_tsv_row(my_row)
                     #print(my_current_row)
                     if "interest" not in my_data:
                         my_data["interest"] = []
